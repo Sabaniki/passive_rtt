@@ -2,31 +2,54 @@ use log::{info};
 use pnet::packet::tcp::{TcpFlags, TcpPacket};
 
 use self::ip::L3Packet;
-// use self::transport::L4Packet;
 
 pub mod ip;
-pub mod transport;
+pub mod tuples;
 
 const WIDTH: usize = 20;
 
 
 pub fn print_packet_info(l3: &dyn L3Packet, l4: &TcpPacket) {
     info!("{}", format!(
-        "Captured a TCP packet from [{}]: {} to [{}]: {}, flag: {}\n",
+        "Captured a TCP packet from [{}]: {} to [{}]: {}, flags: {}\n",
         l3.get_source(),
         l4.get_source(),
         l3.get_destination(),
         l4.get_destination(),
-        l4.get_flags()
+        print_tcp_flags(l4)
     ));
-    if (l4.get_flags() & TcpFlags::SYN) != 0 {
-        info!("this packet is flagged 'SYN'")
+    println!("{}", "=".repeat(WIDTH * 3));
+    println!();
+}
+
+fn print_tcp_flags(l4: &TcpPacket) ->String {
+    let mut res = String::new();
+    if (l4.get_flags() & TcpFlags::URG) != 0 {
+        res += &"URG, ".to_string();
     }
 
     if (l4.get_flags() & TcpFlags::ACK) != 0 {
-        info!("this packet is flagged 'ACK'")
+        res += &"ACK, ".to_string();
     }
 
-    println!("{}", "=".repeat(WIDTH * 3));
-    println!();
+    if (l4.get_flags() & TcpFlags::PSH) != 0 {
+        res += &"PSH, ".to_string();
+    }
+
+    if (l4.get_flags() & TcpFlags::RST) != 0 {
+        res += &"RST, ".to_string();
+    }
+
+    if (l4.get_flags() & TcpFlags::SYN) != 0 {
+        res += &"SYN, ".to_string();
+    }
+
+    if (l4.get_flags() & TcpFlags::FIN) != 0 {
+        res += &"FIN, ".to_string();
+
+    }
+    // 末尾の ", " がダサいので削除
+    res.pop(); res.pop();
+
+    return res;
 }

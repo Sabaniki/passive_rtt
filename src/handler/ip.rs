@@ -5,31 +5,36 @@ use pnet::packet::ipv6::Ipv6Packet;
 use pnet::packet::Packet;
 use crate::handler::transport::tcp_handler;
 use crate::packet::ip::L3Packet;
+use crate::packet::tuples::FiveTupleWithFlagsAndTime;
 
 // IPv4パケットを構築し、次のレイヤのハンドラを呼び出す
-pub fn v4_handler(ethernet: &EthernetPacket) {
+pub fn v4_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime> {
     if let Some(packet) = Ipv4Packet::new(ethernet.payload()) {
-        call_transport_handler(&packet, packet.get_next_level_protocol());
+        return call_transport_handler(&packet, packet.get_next_level_protocol());
     }
+    None
 }
 
 // IPv6パケットを構築し、次のレイヤのハンドラを呼び出す
-pub fn v6_handler(ethernet: &EthernetPacket) {
+pub fn v6_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime> {
     if let Some(packet) = Ipv6Packet::new(ethernet.payload()) {
-        call_transport_handler(&packet, packet.get_next_header());
+        return call_transport_handler(&packet, packet.get_next_header());
     }
+    None
 }
 
-fn call_transport_handler(packet: &dyn L3Packet ,next: IpNextHeaderProtocol) {
+fn call_transport_handler(packet: &dyn L3Packet ,next: IpNextHeaderProtocol) -> Option<FiveTupleWithFlagsAndTime> {
     match next {
         IpNextHeaderProtocols::Tcp => {
-            tcp_handler(packet);
+            tcp_handler(packet)
         },
         IpNextHeaderProtocols::Udp => {
-            info!("This packet is UDP");
+            // info!("This packet is UDP");
+            None
         },
         _ => {
-            info!("This packet is neither TCP nor UDP");
+            // info!("This packet is neither TCP nor UDP");
+            None
         }
     }
 }
