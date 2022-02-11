@@ -6,6 +6,7 @@ mod packet;
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::env;
 use packet::tuples::FiveTupleWithFlagsAndTime;
 use pnet::packet::tcp::TcpFlags;
@@ -41,10 +42,11 @@ fn main() {
         }
     };
 
-    let mut before: Option<FiveTupleWithFlagsAndTime> = None;
-    let mut waiting_ack = false;
+    // let mut before: Option<FiveTupleWithFlagsAndTime> = None;
+    // let mut waiting_ack = false;
+    let mut syn_packets = Vec::new();
     loop {
-        let tmp = match rx.next() {
+        let received = match rx.next() {
             Ok(frame) => {
                 // 受信パケットからイーサネットフレームを構築
                 let frame = EthernetPacket::new(frame).unwrap();
@@ -67,20 +69,31 @@ fn main() {
             }
         };
 
-
-        if let Some (tmp) = tmp {
-            if waiting_ack {
-                if let Some(ref before) = before {
-                    if FiveTupleWithFlagsAndTime::is_same_src_and_dst(&tmp, before) && (tmp.tcp_flags & TcpFlags::ACK) != 0{
-                        info!("{}", format!("[{}] -> [{}], time={:?}", tmp.l3_src, tmp.l3_dst, tmp.time - before.time));
-                        waiting_ack = false;
-                    }
+        if let Some(received) = received {
+            // debug!("{}", format!("packets: {:?}", syn_packets));
+            if ((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) == 0) {
+                let count = syn_packets.iter()
+                .filter(|&packet| 
+                    FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
+                )
+                .collect::<Vec<&FiveTupleWithFlagsAndTime>>()
+                .len();
+                if count == 0 {
+                    syn_packets.push(received);
                 }
             }
-            if !waiting_ack && (tmp.tcp_flags & TcpFlags::SYN) != 0 {
-                before = Some(tmp);
-                waiting_ack = true;
-                // info!("SYN を検知");
+            else if ((received.tcp_flags & TcpFlags::SYN) == 0) && ((received.tcp_flags & TcpFlags::ACK) != 0) {
+                if syn_packets.len() == 0 {
+                    continue;
+                }
+                let target = syn_packets.iter()
+                .filter(|&packet| 
+                    FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
+                )
+                .collect::<Vec<&FiveTupleWithFlagsAndTime>>()[0];
+                info!("{}", format!("[{}] -> [{}], time={:?}", received.l3_src, target.l3_dst, received.time - target.time));
+                syn_packets.retain(|packet| !FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet));
+                // debug!("{}", format!("packets(after retain): {:?}", syn_packets));
             }
         }
     }
