@@ -9,15 +9,9 @@ pub fn tcp_handler(packet: &dyn L3Packet) -> Option<FiveTupleWithFlagsAndTime> {
     let tcp = TcpPacket::new(packet.get_payload());
     if let Some(tcp) = tcp {
         if (tcp.get_flags() & TcpFlags::ACK !=0) || (tcp.get_flags() & TcpFlags::SYN !=0){
-            // SYN か ACK が立ってるパケットのみ情報を出すよ
             // print_packet_info(packet, &tcp);
             return Some(FiveTupleWithFlagsAndTime::new(packet, &tcp))
         }
     }
     None
 }
-
-// fn call_rtt_handler(l3: &dyn L3Packet, l4: &TcpPacket) {
-//     let flags = l4.get_flags();
-//     if (flags)
-// }

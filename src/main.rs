@@ -6,7 +6,6 @@ mod packet;
 #[macro_use]
 extern crate log;
 
-use std::collections::HashMap;
 use std::env;
 use packet::tuples::FiveTupleWithFlagsAndTime;
 use pnet::packet::tcp::TcpFlags;
@@ -17,7 +16,7 @@ use pnet::datalink::Channel::Ethernet;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 
 fn main() {
-    env::set_var("RUST_LOG", "debug");
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
     let interface_name = get_arg().unwrap();
@@ -70,30 +69,28 @@ fn main() {
         };
 
         if let Some(received) = received {
-            // debug!("{}", format!("packets: {:?}", syn_packets));
+            debug!("{}", format!("packets: {:?}", syn_packets));
+            let same_src_and_dst = syn_packets.iter()
+            .filter(|&packet| 
+                FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
+            )
+            .collect::<Vec<&FiveTupleWithFlagsAndTime>>();
+
             if ((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) == 0) {
-                let count = syn_packets.iter()
-                .filter(|&packet| 
-                    FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
-                )
-                .collect::<Vec<&FiveTupleWithFlagsAndTime>>()
-                .len();
+                let count = same_src_and_dst.len();
                 if count == 0 {
                     syn_packets.push(received);
                 }
             }
             else if ((received.tcp_flags & TcpFlags::SYN) == 0) && ((received.tcp_flags & TcpFlags::ACK) != 0) {
-                if syn_packets.len() == 0 {
-                    continue;
+                let target = same_src_and_dst.get(0);
+                if let Some (target) = target {
+                    info!("{}", format!("[{}] -> [{}], time={:?}", received.l3_src, target.l3_dst, received.time - target.time));
+                    syn_packets.retain(|packet| 
+                        !FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
+                    );
+                    debug!("{}", format!("packets(after retain): {:?}", syn_packets));
                 }
-                let target = syn_packets.iter()
-                .filter(|&packet| 
-                    FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
-                )
-                .collect::<Vec<&FiveTupleWithFlagsAndTime>>()[0];
-                info!("{}", format!("[{}] -> [{}], time={:?}", received.l3_src, target.l3_dst, received.time - target.time));
-                syn_packets.retain(|packet| !FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet));
-                // debug!("{}", format!("packets(after retain): {:?}", syn_packets));
             }
         }
     }
