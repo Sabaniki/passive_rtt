@@ -21,14 +21,12 @@ fn main() {
 
     let interface_name = get_arg().unwrap();
 
-    // 引数からインターフェイスを選択
     let interface = interface::get_from_name(interface_name)
         .unwrap_or_else(|e| {
             error!("{}", e);
             exit(-1);
         });
 
-    // データリンクのチャンネルを取得
     let (_tx, mut rx) = match datalink::channel(
         &interface,
         Default::default(),
@@ -41,13 +39,10 @@ fn main() {
         }
     };
 
-    // let mut before: Option<FiveTupleWithFlagsAndTime> = None;
-    // let mut waiting_ack = false;
     let mut syn_packets = Vec::new();
     loop {
         let received = match rx.next() {
             Ok(frame) => {
-                // 受信パケットからイーサネットフレームを構築
                 let frame = EthernetPacket::new(frame).unwrap();
                 match frame.get_ethertype() {
                     EtherTypes::Ipv4 => {
@@ -57,7 +52,6 @@ fn main() {
                         handler::ip::v6_handler(&frame)
                     },
                     _ => {
-                        // info!("This packet is neither IPv4 nor IPv6");
                         None
                     }
                 }
