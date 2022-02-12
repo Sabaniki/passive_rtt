@@ -3,8 +3,7 @@ use crate::packet::print_packet_info;
 use crate::packet::tuples::FiveTupleWithFlagsAndTime;
 use pnet::packet::tcp::{TcpPacket, TcpFlags};
 
-// TCPパケットを構築する。
-// 引数のパケットにはIPパケットが入り、それの皮を剥いたものを次に渡す。
+// IP のペイロードからから TCP パケットを抽出して次に渡す。
 pub fn tcp_handler(packet: &dyn L3Packet) -> Option<FiveTupleWithFlagsAndTime> {
     let tcp = TcpPacket::new(packet.get_payload());
     if let Some(tcp) = tcp {

@@ -7,7 +7,7 @@ use crate::handler::transport::tcp_handler;
 use crate::packet::ip::L3Packet;
 use crate::packet::tuples::FiveTupleWithFlagsAndTime;
 
-// IPv4パケットを構築し、次のレイヤのハンドラを呼び出す
+// Ether のペイロードから IPv4 パケットを抽出．次のレイヤのハンドラを呼び出す
 pub fn v4_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime> {
     if let Some(packet) = Ipv4Packet::new(ethernet.payload()) {
         return call_transport_handler(&packet, packet.get_next_level_protocol());
@@ -15,7 +15,7 @@ pub fn v4_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime
     None
 }
 
-// IPv6パケットを構築し、次のレイヤのハンドラを呼び出す
+// Ether のペイロードから IPv4 パケットを抽出．次のレイヤのハンドラを呼び出す
 pub fn v6_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime> {
     if let Some(packet) = Ipv6Packet::new(ethernet.payload()) {
         return call_transport_handler(&packet, packet.get_next_header());

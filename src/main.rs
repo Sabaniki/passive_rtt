@@ -6,8 +6,8 @@ mod packet;
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::env;
-use packet::tuples::FiveTupleWithFlagsAndTime;
 use pnet::packet::tcp::TcpFlags;
 use util::app::get_arg;
 use std::process::exit;
@@ -39,7 +39,7 @@ fn main() {
         }
     };
 
-    let mut syn_packets = Vec::new();
+    let mut syn_packets = HashMap::new();
     loop {
         let received = match rx.next() {
             Ok(frame) => {
@@ -64,25 +64,13 @@ fn main() {
 
         if let Some(received) = received {
             debug!("{}", format!("packets: {:?}", syn_packets));
-            let same_src_and_dst = syn_packets.iter()
-            .filter(|&packet| 
-                FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
-            )
-            .collect::<Vec<&FiveTupleWithFlagsAndTime>>();
-
             if ((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) == 0) {
-                let count = same_src_and_dst.len();
-                if count == 0 {
-                    syn_packets.push(received);
-                }
+                syn_packets.insert(received.create_key(), received.time);
             }
             else if ((received.tcp_flags & TcpFlags::SYN) == 0) && ((received.tcp_flags & TcpFlags::ACK) != 0) {
-                let target = same_src_and_dst.get(0);
-                if let Some (target) = target {
-                    info!("{}", format!("[{}] -> [{}], time={:?}", received.l3_src, target.l3_dst, received.time - target.time));
-                    syn_packets.retain(|packet| 
-                        !FiveTupleWithFlagsAndTime::is_same_src_and_dst(&received, packet)
-                    );
+                if let Some (&target) = syn_packets.get(&received.create_key()) {
+                    info!("{}", format!("[{}] -> [{}], time={:?}", received.l3_src, received.l3_dst, received.time - target));
+                    syn_packets.remove(&received.create_key());
                     debug!("{}", format!("packets(after retain): {:?}", syn_packets));
                 }
             }

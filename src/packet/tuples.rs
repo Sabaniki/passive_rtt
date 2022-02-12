@@ -26,18 +26,7 @@ impl FiveTupleWithFlagsAndTime {
             time: Instant::now(),
         }
     }
-    pub fn is_same_src_and_dst(one: &FiveTupleWithFlagsAndTime, another: &FiveTupleWithFlagsAndTime) -> bool {
-        return one.l3_src == another.l3_src
-            && one.l3_dst == another.l3_dst
-            && one.l4_src == another.l4_src
-            && one.l4_dst == another.l4_dst
-    }
-    pub fn is_same_flow(one: &FiveTupleWithFlagsAndTime, another: &FiveTupleWithFlagsAndTime) -> bool {
-        return(
-                one.l3_src == another.l3_dst
-            &&  one.l3_dst == another.l3_src
-            &&  one.l4_src == another.l4_dst
-            &&  one.l4_dst == another.l4_src
-        )   || FiveTupleWithFlagsAndTime::is_same_src_and_dst(one, another);
+    pub fn create_key(&self) -> String {
+        format!("[{}]:{},[{}]:{}", self.l3_src, self.l4_src, self.l3_dst, self.l4_dst)
     }
 }
