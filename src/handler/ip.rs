@@ -28,12 +28,7 @@ fn call_transport_handler(packet: &dyn L3Packet ,next: IpNextHeaderProtocol) -> 
         IpNextHeaderProtocols::Tcp => {
             tcp_handler(packet)
         },
-        IpNextHeaderProtocols::Udp => {
-            // info!("This packet is UDP");
-            None
-        },
         _ => {
-            // info!("This packet is neither TCP nor UDP");
             None
         }
     }
