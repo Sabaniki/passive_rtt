@@ -15,7 +15,7 @@ pub fn v4_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime
     None
 }
 
-// Ether のペイロードから IPv4 パケットを抽出．次のレイヤのハンドラを呼び出す
+// Ether のペイロードから IPv6 パケットを抽出．次のレイヤのハンドラを呼び出す
 pub fn v6_handler(ethernet: &EthernetPacket) -> Option<FiveTupleWithFlagsAndTime> {
     if let Some(packet) = Ipv6Packet::new(ethernet.payload()) {
         return call_transport_handler(&packet, packet.get_next_header());
