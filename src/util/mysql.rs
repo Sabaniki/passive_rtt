@@ -1,5 +1,5 @@
 use diesel::mysql::MysqlConnection;
-use diesel::{prelude::*, Queryable};
+use diesel::{prelude::*};
 use dotenv::dotenv;
 use std::env;
 use crate::schema::rtts;
@@ -10,7 +10,7 @@ pub fn establish_connection() -> MysqlConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-// id  SERIAL PRIMARY KEY,
+// id CHAR(64) PRIMARY KEY,
 // src VARCHAR(39) NOT NULL,
 // dst VARCHAR(39) NOT NULL,
 // rtt INT UNSIGNED NOT NULL

@@ -41,6 +41,8 @@ fn main() {
     };
 
     let connection = establish_connection();
+    let mut sha256 = Sha256::new();
+
 
     let mut syn_packets = HashMap::new();
     loop {
@@ -77,8 +79,6 @@ fn main() {
                     syn_packets.remove(&received.create_key());
                     debug!("{}", format!("packets(after retain): {:?}", syn_packets));
                     let hash = received.l3_src.clone() + &received.l3_dst.clone();
-            
-                    let mut sha256 = Sha256::new();
                     sha256.input_str(&hash);
                     let new_rtt = Rtt {
                         id: sha256.result_str(),

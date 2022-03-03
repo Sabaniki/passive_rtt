@@ -1,6 +1,5 @@
 use std::time::Instant;
 
-use diesel::QueryableByName;
 use pnet::packet::tcp::TcpPacket;
 
 use super::ip::L3Packet;
