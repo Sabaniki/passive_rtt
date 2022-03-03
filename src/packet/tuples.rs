@@ -1,11 +1,13 @@
 use std::time::Instant;
 
+use diesel::QueryableByName;
 use pnet::packet::tcp::TcpPacket;
 
 use super::ip::L3Packet;
 
 
 #[derive(Debug, PartialEq)]
+
 pub struct FiveTupleWithFlagsAndTime {  // よく考えたらプロトコル番号がないので 5tuple ではない
     pub l3_src: String,
     pub l3_dst: String,

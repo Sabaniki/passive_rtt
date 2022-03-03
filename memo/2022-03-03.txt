@@ -1,0 +1,3 @@
+sudo apt-get install libmysqlclient-dev ← これないと diesel が動かない
+
+src/dst のサイズ = VARCHAR(39): 4文字 * 8つ + コロンが7つ

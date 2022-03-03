@@ -11,6 +11,9 @@ log = "0.4.14"
 env_logger = "0.9.0"
 clap = "=3.0.14"
 anyhow = "1.0.38"
+diesel = { version = "1.4.4", features = ["mysql"] }
+dotenv = "0.15.0"
+rust-crypto = "0.2"
 
 [profile.dev]
 opt-level = 0
