@@ -21,5 +21,6 @@ pub struct Rtt {
     pub id: String,
     pub src: String,
     pub dst: String,
+    pub sid: Option<String>,
     pub rtt: u32,
 }

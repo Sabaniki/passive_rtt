@@ -50,11 +50,15 @@ fn main() {
             Ok(frame) => {
                 let frame = EthernetPacket::new(frame).unwrap();
                 match frame.get_ethertype() {
-                    EtherTypes::Ipv4 => {
-                        handler::ip::v4_handler(&frame)
-                    },
+                    // EtherTypes::Ipv4 => {
+                    //     handler::ip::v4_handler(&frame)
+                    // },
                     EtherTypes::Ipv6 => {
-                        handler::ip::v6_handler(&frame)
+                        let rec = handler::ip::v6_handler(&frame);    
+                        // info!("{}", format!("packet tail---------------------------------------------------------"));
+                        println!("packet tail:{}", "=".repeat(20 * 3));
+                        println!();
+                        rec
                     },
                     _ => {
                         None
@@ -70,27 +74,40 @@ fn main() {
         if let Some(received) = received {
             debug!("{}", format!("packets: {:?}", syn_packets));
             if ((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) == 0) {
-                syn_packets.insert(received.create_key(), received.time);
+                syn_packets.insert(received.create_key(), (received.time.clone(), received.sid.clone()));
             }
             else if ((received.tcp_flags & TcpFlags::SYN) == 0) && ((received.tcp_flags & TcpFlags::ACK) != 0) {
-                if let Some (&target) = syn_packets.get(&received.create_key()) {
-                    let rtt =  (received.time - target).as_micros() as u32;
+                if let Some (target) = syn_packets.get(&received.create_key()) {
+                    let rtt =  (received.time - target.0).as_micros() as u32;
                     info!("{}", format!("[{}] -> [{}], time={:?}μs", received.l3_src, received.l3_dst, &rtt));
+                    info!("{}", format!("from main, sid: {:?}", received.sid));
+                    let sid = target.1.clone();
                     syn_packets.remove(&received.create_key());
                     debug!("{}", format!("packets(after retain): {:?}", syn_packets));
-                    let hash = received.l3_src.clone() + &received.l3_dst.clone();
+                    let hash = if let Some(sid) = &received.sid {
+                        received.l3_src.clone() + &received.l3_dst.clone() + sid
+                    } else {
+                        received.l3_src.clone() + &received.l3_dst.clone()
+                    };
                     sha256.input_str(&hash);
                     let new_rtt = Rtt {
                         id: sha256.result_str(),
                         src: received.l3_src,
                         dst: received.l3_dst,
+                        sid: sid,
                         rtt: rtt
                     };
-                    insert_into(passive_rtt::schema::rtts::dsl::rtts)
-                        .values(new_rtt)
-                        .execute(&connection)
-                        .expect("Error saving new rtt");
+                    // insert_into(passive_rtt::schema::rtts::dsl::rtts)
+                    //     .values(new_rtt)
+                    //     .execute(&connection)
+                    //     .expect("Error saving new rtt");
                     debug!("{}", format!("done!!!"));
+                }
+            }
+            else if ((received.tcp_flags & TcpFlags::ACK) != 0) {
+                debug!("{}", format!("on syn-ack"));
+                if let Some (target) = syn_packets.get(&received.reverse_create_key()) {
+                    syn_packets.insert(received.reverse_create_key(), (target.0, received.sid));
                 }
             }
         }

@@ -1,7 +1,7 @@
 use log::{info};
-use pnet::packet::tcp::{TcpFlags, TcpPacket};
+use pnet::packet::{tcp::{TcpFlags, TcpPacket}, ipv6::Ipv6Packet};
 
-use self::ip::L3Packet;
+// use self::ip::L3Packet;
 
 pub mod ip;
 pub mod tuples;
@@ -9,7 +9,8 @@ pub mod tuples;
 const WIDTH: usize = 20;
 
 
-pub fn print_packet_info(l3: &dyn L3Packet, l4: &TcpPacket) {
+// pub fn print_packet_info(l3: &dyn L3Packet, l4: &TcpPacket) {
+pub fn print_packet_info(l3: &Ipv6Packet, l4: &TcpPacket) {
     info!("{}", format!(
         "Captured a TCP packet from [{}]: {} to [{}]: {}, flags: {}\n",
         l3.get_source(),
@@ -18,8 +19,8 @@ pub fn print_packet_info(l3: &dyn L3Packet, l4: &TcpPacket) {
         l4.get_destination(),
         print_tcp_flags(l4)
     ));
-    println!("{}", "=".repeat(WIDTH * 3));
-    println!();
+    // println!("{}", "=".repeat(WIDTH * 3));
+    // println!();
 }
 
 fn print_tcp_flags(l4: &TcpPacket) ->String {

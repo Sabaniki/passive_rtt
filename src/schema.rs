@@ -3,6 +3,7 @@ table! {
         id -> Char,
         src -> Varchar,
         dst -> Varchar,
+        sid -> Nullable<Varchar>,
         rtt -> Unsigned<Integer>,
     }
 }
