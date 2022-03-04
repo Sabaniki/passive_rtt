@@ -72,7 +72,9 @@ fn main() {
         };
 
         if let Some(received) = received {
-            debug!("{}", format!("packets: {:?}", syn_packets));
+            debug!("{}", format!("syn_packets: {:?}", syn_packets));
+            debug!("{}", format!("received_packets: {:?}", received));
+            
             if ((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) == 0) {
                 syn_packets.insert(received.create_key(), (received.time.clone(), received.sid.clone()));
             }
@@ -97,19 +99,21 @@ fn main() {
                         sid: sid,
                         rtt: rtt
                     };
-                    // insert_into(passive_rtt::schema::rtts::dsl::rtts)
-                    //     .values(new_rtt)
-                    //     .execute(&connection)
-                    //     .expect("Error saving new rtt");
+                    insert_into(passive_rtt::schema::rtts::dsl::rtts)
+                        .values(new_rtt)
+                        .execute(&connection)
+                        .expect("Error saving new rtt");
                     debug!("{}", format!("done!!!"));
                 }
             }
-            else if ((received.tcp_flags & TcpFlags::ACK) != 0) {
+            else if((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) != 0)  {
                 debug!("{}", format!("on syn-ack"));
                 if let Some (target) = syn_packets.get(&received.reverse_create_key()) {
+                    debug!("{}", format!("hit key!"));
                     syn_packets.insert(received.reverse_create_key(), (target.0, received.sid));
                 }
             }
+            println!("end received:{}", "=".repeat(20 * 3));
         }
     }
 }
