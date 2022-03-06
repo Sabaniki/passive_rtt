@@ -1,2 +1,2 @@
 -- This file should undo anything in `up.sql`
-DROP TABLE rtts;
+DROP TABLE raw_rtts;

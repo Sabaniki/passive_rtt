@@ -3,7 +3,7 @@ extern crate log;
 
 use std::collections::HashMap;
 use std::env;
-use passive_rtt::util::mysql::{establish_connection, Rtt};
+use passive_rtt::util::mysql::{establish_connection, RawRtt, update_db};
 use passive_rtt::{handler, interface};
 use pnet::packet::tcp::TcpFlags;
 use passive_rtt::util::app::get_arg;
@@ -11,13 +11,9 @@ use std::process::exit;
 use pnet::datalink;
 use pnet::datalink::Channel::Ethernet;
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
-use diesel::insert_into;
-use diesel::RunQueryDsl;
-use crypto::sha2::Sha256;
-use crypto::digest::Digest;
 
 fn main() {
-    env::set_var("RUST_LOG", "debug");
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
     let interface_name = get_arg().unwrap();
@@ -41,7 +37,6 @@ fn main() {
     };
 
     let connection = establish_connection();
-    let mut sha256 = Sha256::new();
 
 
     let mut syn_packets = HashMap::new();
@@ -55,9 +50,8 @@ fn main() {
                     // },
                     EtherTypes::Ipv6 => {
                         let rec = handler::ip::v6_handler(&frame);    
-                        // info!("{}", format!("packet tail---------------------------------------------------------"));
-                        println!("packet tail:{}", "=".repeat(20 * 3));
-                        println!();
+                        // println!("packet tail:{}", "=".repeat(20 * 3));
+                        // println!();
                         rec
                     },
                     _ => {
@@ -86,24 +80,13 @@ fn main() {
                     let sid = target.1.clone();
                     syn_packets.remove(&received.create_key());
                     debug!("{}", format!("packets(after retain): {:?}", syn_packets));
-                    let hash = if let Some(sid) = &received.sid {
-                        received.l3_src.clone() + &received.l3_dst.clone() + sid
-                    } else {
-                        received.l3_src.clone() + &received.l3_dst.clone()
-                    };
-                    sha256.input_str(&hash);
-                    let new_rtt = Rtt {
-                        id: sha256.result_str(),
+                    let new_rtt = RawRtt {
                         src: received.l3_src,
                         dst: received.l3_dst,
-                        sid: sid,
-                        rtt: rtt
+                        sid,
+                        rtt
                     };
-                    insert_into(passive_rtt::schema::rtts::dsl::rtts)
-                        .values(new_rtt)
-                        .execute(&connection)
-                        .expect("Error saving new rtt");
-                    debug!("{}", format!("done!!!"));
+                    update_db(&new_rtt, &connection);
                 }
             }
             else if((received.tcp_flags & TcpFlags::SYN) != 0) && ((received.tcp_flags & TcpFlags::ACK) != 0)  {
@@ -113,7 +96,7 @@ fn main() {
                     syn_packets.insert(received.reverse_create_key(), (target.0, received.sid));
                 }
             }
-            println!("end received:{}", "=".repeat(20 * 3));
+            // println!("end received:{}", "=".repeat(20 * 3));
         }
     }
 }

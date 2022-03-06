@@ -25,15 +25,10 @@ fn call_transport_handler(packet: &Ipv6Packet ,next: IpNextHeaderProtocol) -> Op
         IpNextHeaderProtocols::Ipv6Route => {
             debug!("it includes sid");
             info!("from caller, sid: {}", format!("{:?}", Some(packet.get_destination())));
-            // debug!("packet: {}", format!("{:?}", packet.packet().iter().map(|x| format!("{:02X}", x)).collect::<String>()));
             if let Some(outer) = Ipv6Packet::new(&packet.payload()) {
-                // debug!("outer: {}", format!("{:?}", &outer.packet().iter().map(|x| format!("{:02X}", x)).collect::<String>()));
-                // debug!("outer length: {}", format!("{:?}", &outer.packet().iter().len()));
-                // debug!("outer after SRH: {}", format!("{:?}", &outer.packet()[24..].iter().map(|x| format!("{:02X}", x)).collect::<String>()));
                  // Length が 2 のときに 24 byte だったから (2 + 1) * 8 かなと解釈したけど正直良くわからない
                 let aflter_srh: usize = ((&outer.packet()[1] + 1) * 8).into();
                 if let Some(inner) = Ipv6Packet::new(&outer.packet()[aflter_srh..]){
-                    // debug!("inner: {}", format!("{:?}", &inner.packet().iter().map(|x| format!("{:02X}", x)).collect::<String>()));
                     return tcp_handler(&inner, Some(packet.get_destination()))
                 }
             }
