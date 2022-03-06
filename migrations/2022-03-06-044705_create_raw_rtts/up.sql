@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE raw_rtts (
+CREATE TABLE IF NOT EXISTS raw_rtts (
     id  SERIAL PRIMARY KEY,
     src VARCHAR(39) NOT NULL,
     dst VARCHAR(39) NOT NULL,

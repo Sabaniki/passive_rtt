@@ -12,23 +12,10 @@ pub fn establish_connection() -> MysqlConnection {
 }
 
 pub fn update_db(new_rtt: &RawRtt, connection: &MysqlConnection) {
-    let update_target = dsl::raw_rtts
-        .filter(dsl::src.eq(&new_rtt.src))
-        .filter(dsl::dst.eq(&new_rtt.dst))
-        .filter(dsl::sid.eq(&new_rtt.sid));
-    let count = update_target.execute(connection).expect("Error counting raw_rtts");
-    if 0 < count {
-        diesel::update(update_target)
-        .set(new_rtt)
+    insert_into(dsl::raw_rtts)
+        .values(new_rtt)
         .execute(connection)
-        .expect("Error updating new_rtt");
-    }
-    else {
-        insert_into(dsl::raw_rtts)
-            .values(new_rtt)
-            .execute(connection)
-            .expect("Error saving new rtt");
-    }
+        .expect("Error saving new rtt");
 }
 
 #[derive(Insertable, QueryableByName, Queryable, AsChangeset)]
